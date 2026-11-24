@@ -3,5 +3,3 @@ main:
 ##    url: /featured/
   - title: "Posts by Tag"
     url: /tags/
-  - title: "About Me"
-    url: /about/

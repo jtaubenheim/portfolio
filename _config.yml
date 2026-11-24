@@ -14,7 +14,7 @@
 # You can create any custom variable you would like, and they will be accessible
 # in the templates via {{ site.myvariable }}.
 locale: "en-US"
-title: Joshua Taubenheim's Portfolio
+title: Joshua Taubenheim's Online Portfolio
 email: joshua.taubenheim@gmail.com
 description: >- # this means to ignore newlines until "baseurl:"
   Write an awesome description for your new site here. You can edit this
@@ -62,9 +62,9 @@ plugins:
   - jekyll-github-metadata
 
 author:
-  name   : "Bio"
+  name   : "Professional Summary"
   avatar : "/assets/images/headshot.jpg"
-  bio    : "I’m Joshua (Josh) Taubenheim, a technical writer, project manager, and hardware hobbyist. I have worked in the technology industry for over 7 years helping development teams level-up their knowledge bases, creating compelling research content in the field of IoT, and innovating new ways for enterprise organizations to effectively manage their documentation workflows. I created this space to archive some of my previous professional work and showcase my interests.<br><br>I am actively seeking new career opportunities! If you'd like to discuss please don't hesitate to reach out on LinkedIn or directly!"
+  bio    : "Joshua Taubenheim is a Senior Technical Writer and Content Engineer with 8+ years of experience developing end-to-end knowledge management solutions for enterprise SaaS products. Currently leading technical writing initiatives at Motorola Solutions, he specializes in bridging engineering, product management, and design to build scalable knowledge management systems, REST API references, and automated CI/CD documentation pipelines.<br><br>Explore archived works on this site or get in touch directly via email or LinkedIn using the links below."
   links:
     - label: "Email"
       icon: "fa-solid fa-envelope"

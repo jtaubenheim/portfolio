@@ -1,0 +1,189 @@
+# -*- encoding: utf-8 -*-
+require 'test/unit'
+
+require 'httpclient'
+require 'webrick'
+require 'webrick/httpproxy.rb'
+require 'logger'
+require 'stringio'
+begin
+  require 'cgi/escape'
+rescue LoadError
+  require 'cgi'
+end
+require 'webrick/httputils'
+
+if RUBY_ENGINE == 'jruby'
+  require 'webrick/https'
+  require 'delegate'
+
+  module JRubyWEBrickSSLReadBuffer
+    class ReadableIO < SimpleDelegator
+      def initialize(socket)
+        @ssl_socket = socket
+        super(socket.to_io)
+      end
+
+      def wait_readable(timeout = nil)
+        # JRuby may buffer request bytes while completing the TLS handshake.
+        @ssl_socket.pending > 0 || super
+      end
+    end
+
+    module HTTPServerPatch
+      def run(sock)
+        if sock.respond_to?(:pending)
+          readable_io = ReadableIO.new(sock)
+          sock.define_singleton_method(:to_io) { readable_io }
+        end
+        super
+      ensure
+        sock.singleton_class.remove_method(:to_io) if readable_io
+      end
+    end
+
+    module HTTPRequestPatch
+      def parse(socket = nil)
+        skip_peer_cert_chain = socket.respond_to?(:peer_cert_chain) &&
+          socket.respond_to?(:peer_cert) && socket.peer_cert.nil?
+        if skip_peer_cert_chain
+          # WEBrick asks JRuby for a peer chain even when no client certificate was sent.
+          socket.define_singleton_method(:peer_cert_chain) { nil }
+        end
+        super
+      ensure
+        socket.singleton_class.remove_method(:peer_cert_chain) if skip_peer_cert_chain
+      end
+    end
+  end
+
+  WEBrick::HTTPServer.prepend(JRubyWEBrickSSLReadBuffer::HTTPServerPatch)
+  WEBrick::HTTPRequest.prepend(JRubyWEBrickSSLReadBuffer::HTTPRequestPatch)
+end
+
+
+module Helper
+  Port = 17171
+  ProxyPort = 17172
+
+  def serverport
+    setup_server unless @server
+    @serverport
+  end
+
+  def proxyport
+    setup_proxyserver unless @proxyserver
+    @proxyport
+  end
+
+  def serverurl
+    "http://localhost:#{serverport}/"
+  end
+
+  def proxyurl
+    "http://localhost:#{proxyport}/"
+  end
+
+  def setup
+    @logger = Logger.new(STDERR)
+    @logger.level = Logger::Severity::FATAL
+    @proxyio = StringIO.new
+    @proxylogger = Logger.new(@proxyio)
+    @proxylogger.level = Logger::Severity::DEBUG
+    @server = @proxyserver = @client = nil
+    @server_thread = @proxyserver_thread = nil
+    @serverport = Port
+    @proxyport = ProxyPort
+  end
+
+  def teardown
+    begin
+      teardown_client if @client
+    ensure
+      begin
+        teardown_proxyserver if @proxyserver
+      ensure
+        teardown_server if @server
+      end
+    end
+  end
+
+  def setup_client
+    @client = HTTPClient.new
+    # Set more reasonable timeouts to make debug easier
+    @client.connect_timeout = 3
+    @client.send_timeout = 3
+    @client.receive_timeout = 3
+    @client
+  end
+
+  def escape_noproxy
+    backup = HTTPClient::NO_PROXY_HOSTS.dup
+    HTTPClient::NO_PROXY_HOSTS.clear
+    yield
+  ensure
+    HTTPClient::NO_PROXY_HOSTS.replace(backup)
+  end
+
+  def setup_proxyserver
+    @proxyserver = WEBrick::HTTPProxyServer.new(
+      :BindAddress => "localhost",
+      :Logger => @proxylogger,
+      :Port => 0,
+      :AccessLog => []
+    )
+    @proxyport = @proxyserver.config[:Port]
+    @proxyserver_thread = start_server_thread(@proxyserver)
+  end
+
+  def teardown_client
+    @client.reset_all
+  end
+
+  def teardown_server
+    @server.shutdown
+    @server_thread.join if @server_thread
+  end
+
+  def teardown_proxyserver
+    @proxyserver.shutdown
+    @proxyserver_thread.join if @proxyserver_thread
+  end
+
+  def start_server_thread(server)
+    t = Thread.new {
+      Thread.current.abort_on_exception = true
+      server.start
+    }
+    while server.status != :Running
+      Thread.pass
+      unless t.alive?
+        t.join
+        raise
+      end
+    end
+    t
+  end
+
+  def params(str)
+    HTTP::Message.parse(str).inject({}) { |r, (k, v)| r[k] = v.first; r }
+  end
+
+  def silent
+    begin
+      back, $VERBOSE = $VERBOSE, nil
+      yield
+    ensure
+      $VERBOSE = back
+    end
+  end
+
+  def escape_env
+    env = {}
+    env.update(ENV)
+    yield
+  ensure
+    ENV.clear
+    ENV.update(env)
+  end
+end

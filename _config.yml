@@ -64,7 +64,7 @@ plugins:
 author:
   name   : "Professional Summary"
   avatar : "/assets/images/headshot.jpg"
-  bio    : "Joshua Taubenheim is a Senior Technical Writer and Content Engineer with 8+ years of experience developing end-to-end knowledge management solutions for enterprise SaaS products. Currently leading technical writing initiatives at Motorola Solutions, he specializes in bridging engineering, product management, and design to build scalable knowledge management systems, REST API references, and automated CI/CD documentation pipelines.<br><br>Explore archived works on this site or get in touch directly via email or LinkedIn using the links below."
+  bio    : "Joshua Taubenheim is a Senior Technical Writer and Knowledge Management Engineer with 8+ years of experience developing end-to-end knowledge management solutions for enterprise SaaS products. Currently leading technical writing initiatives at Motorola Solutions, he specializes in bridging engineering, product management, and design to build scalable knowledge management systems, REST API references, and automated CI/CD documentation pipelines.<br><br>The work presented here is an archive of **some** of my public-facing work. Please feel free to explore the archives on this site or get in touch directly via email or LinkedIn using the links below to inquire further."
   links:
     - label: "Email"
       icon: "fa-solid fa-envelope"
